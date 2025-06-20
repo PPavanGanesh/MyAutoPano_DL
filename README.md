@@ -1,78 +1,135 @@
-Project Title: MyAutoPano - Phase 2
-Classical and Deep Learning Approaches for Geometric Computer Vision
-This project focuses on training a homography estimation model using supervised and unsupervised techniques for geometric computer vision applications. The provided scripts help generate datasets of original and warped image patches and train the model on these datasets.
+# MyAutoPano - Phase 2 📸🔁🧠
 
-Step 1: Generating the Dataset
-The dataset generation process extracts patches from images, applies random perturbations, and stores the original and warped patches along with ground-truth perturbation vectors.
-Command to Generate Data
-python Data_generation.py
+A deep learning-based pipeline for estimating homographies between image patches and stitching multiple images into a seamless panorama using supervised and unsupervised learning approaches.
 
-Base Directory: Ensure that Data/Train and Data/Val contain the original grayscale images.
-Generated Data: The generated patches and labels will be saved under GeneratedData/Train and GeneratedData/Val.
-Output Structure:
-|-- GeneratedData/
-    |-- Train/
-        |-- Original/       # Original patches
-        |-- Warped/         # Warped patches
-        |-- Labels/         # Perturbations, corners, and homography matrices
-    |-- Val/
-        |-- Original/
-        |-- Warped/
-        |-- Labels/
+---
 
+## 🚀 Project Overview
 
-Step 2: Training the Model
-The training script supports both supervised and unsupervised learning approaches for homography estimation. It uses TensorBoard for visualizing the training progress and saves model checkpoints periodically.
-Command to Train the Model
-python train.py --BasePath <path_to_data> --LogsPath <logs_directory> --NumEpochs 10 --MiniBatchSize 32 --ModelType Sup
+This project extends traditional image stitching by replacing handcrafted methods with **CNN-based homography estimation**. Using a dataset of perturbed image patches, we train supervised and unsupervised models to predict homography transformations, ultimately allowing for robust panorama creation.
 
-Command-Line Arguments:
-Argument
-Description
-Default
---BasePath
-Path to the dataset (original and generated data)
-Eg. C:\Users\pavan\OneDrive\Desktop\CV\YourDirectoryID_p1\Phase2\Data
---LogsPath
-Path to save TensorBoard logs and checkpoints
-Logs/
---NumEpochs
-Number of epochs to train the model
-10
---MiniBatchSize
-Batch size used during training
-32
---ModelType
-Type of model: Sup for supervised or Unsup for unsupervised
-Sup
---LoadCheckPoint
-Resume from an existing checkpoint (1 for Yes, 0 for No)
-0
---CheckpointInterval
-Epoch interval to save checkpoints
-5
+Key features include:
+- 🔧 Synthetic data generation with known ground truth
+- 🧠 Supervised and unsupervised CNN models
+- 📊 Visualization and evaluation on test images
+- 🖼️ Stitching multiple images into panoramic views
 
-Example Command for Supervised Training
-python train.py --BasePath ./Data --LogsPath ./Logs --NumEpochs 20 --MiniBatchSize 64 --ModelType Sup
+---
 
-Example Command for Unsupervised Training
-python train.py --BasePath ./Data --LogsPath ./Logs --NumEpochs 15 --MiniBatchSize 32 --ModelType Unsup
+## 📁 Directory Structure
 
+```
 
-TensorBoard Visualization
-You can monitor the training progress using TensorBoard. Run the following command in the terminal:
-tensorboard --logdir <path_to_logs_directory>
+├── Data\_Generation.py          # Generate training & validation patch datasets
+├── Train.py                    # Train supervised or unsupervised models
+├── Test.py                     # Evaluate trained model on test data
+├── Wrapper.py                  # Stitch images using trained homography model
+├── Network.py                  # CNN architectures for both Sup/UnSup modes
+├── Logs/                       # Checkpoints and loss graphs
+├── Data/                       # Folder for raw and generated data
+│   ├── Train/
+│   ├── Val/
+│   └── GeneratedData/
 
-Open the provided URL in your browser to view the training and validation loss plots.
+````
 
-Directory Requirements
-Ensure that the following directories are correctly structured before running:
- Data/
-├── Train/          # Directory with original training images
-└── Val/            # Directory with original validation images
+---
 
-Notes
-Device Support: The scripts automatically utilize a CUDA-enabled GPU if available. Otherwise, they fall back to CPU.
-Gradient Clipping: Enabled to prevent exploding gradients.
-Learning Rate: Adjust the learning rate as needed in train.py (default: 0.0001).
-Data Normalization: Images are normalized to [0, 1] for input to the network.
+## 🧠 Deep Learning Methods
+
+### 1. **Supervised Learning**  
+Predicts the 8-dimensional displacement vector between original and perturbed patch corners.
+
+- Loss Function: MSE
+- Model: 8-layer CNN + 2 fully connected layers
+- Output: 4 corner displacements → Homography matrix
+
+### 2. **Unsupervised Learning**  
+Estimates homography indirectly using photometric error between the warped image and the target.
+
+- Loss Function: L1 photometric loss
+- Module: TensorDLT (to compute 3×3 homography matrix)
+- Library: Kornia for differentiable warping
+
+---
+
+## 🧪 Phase Breakdown
+
+### 🔹 **Data Generation** – `Data_Generation.py`
+
+- Extract 128×128 patches from training/validation images
+- Apply random corner perturbations (±32 pixels)
+- Save original, warped, perturbation vectors and corner locations
+
+### 🔹 **Training** – `Train.py`
+
+- Supports both Supervised (`--ModelType Sup`) and Unsupervised (`--ModelType Unsup`) modes
+- TensorBoard logging and checkpoint saving
+- Example:
+
+```bash
+python3 Train.py --BasePath /path/to/Data --NumEpochs 40 --MiniBatchSize 32 --ModelType Sup
+````
+
+### 🔹 **Testing** – `Test.py`
+
+* Loads trained model, compares predicted and ground-truth displacements
+* Visualizes corner sets (original, perturbed, predicted) for verification
+* Outputs L2 error per sample
+
+### 🔹 **Panorama Stitching** – `Wrapper.py`
+
+* Uses predicted homography to warp and align consecutive images
+* Displays and saves final stitched panorama
+
+---
+
+## 📊 Sample Results
+
+* 🧠 Train Set EPE: **7.62**
+* 📊 Validation EPE: **7.62**
+* 🧪 Test Set EPE: **7.66**
+* 📸 Panorama blending with multiple images using learned transformations
+
+---
+
+## ⚙️ Requirements
+
+* Python 3.7+
+* PyTorch
+* OpenCV
+* Kornia
+* Matplotlib
+* NumPy
+* Pandas
+* TensorBoard (for training visualization)
+
+Install all dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## 📌 Notes
+
+* All patches are grayscale, normalized to \[0,1]
+* Models are trained on 40,000 samples and validated on 20,000 samples
+* Use absolute paths for checkpoints and data directories
+
+---
+
+## 👨‍💻 Authors
+
+* Pavan Ganesh Pabbineedi – [WPI Robotics](ppabbineedi@wpi.edu)
+* Manideep Duggi – [WPI Robotics](mduggi@wpi.edu)
+
+---
+
+## 📄 License
+
+This project is for academic use only. Please contact the authors for other use cases.
+
+```
+
